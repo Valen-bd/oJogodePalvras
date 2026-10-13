@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Palavra por Palavra — protótipo acessível</title>
+  <style>
+    :root {
+      --ink: #17251f;
+      --muted: #43564d;
+      --paper: #fffdf7;
+      --surface: #ffffff;
+      --line: #66776e;
+      --green: #164d36;
+      --green-dark: #103a29;
+      --gold: #694700;
+      --soft-green: #e8f2eb;
+      --soft-gold: #fff3ce;
+      --danger: #842b20;
+      --focus: #8a4300;
+      --radius: 1rem;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--paper); color: var(--ink); }
+    body { margin: 0; line-height: 1.55; }
+    button, input, select { font: inherit; }
+    button, select, input { min-height: 48px; }
+    button { cursor: pointer; }
+    :focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 2px var(--paper);
+    }
+    a { color: var(--green-dark); }
+
+    .skip-link {
+      position: absolute;
+      top: .5rem;
+      left: .5rem;
+      z-index: 5;
+      padding: .75rem 1rem;
+      transform: translateY(-160%);
+      border-radius: .5rem;
+      background: var(--ink);
+      color: white;
+    }
+    .skip-link:focus { transform: translateY(0); }
+    .wrap { width: min(100% - 2rem, 1080px); margin-inline: auto; }
+    .site-header { padding: 1.1rem 0; border-bottom: 2px solid var(--ink); }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .brand { margin: 0; font-size: 1.2rem; font-weight: 850; letter-spacing: -.03em; }
+    .brand span { color: var(--green); }
+    .no-ads { margin: 0; color: var(--muted); font-size: .95rem; font-weight: 700; }
+
+    main { padding-block: clamp(1.5rem, 4vw, 3.5rem); }
+    .intro { max-width: 720px; margin: 0 auto 1.7rem; text-align: center; }
+    .eyebrow { margin: 0 0 .3rem; color: var(--green-dark); font-size: .82rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.08; letter-spacing: -.045em; }
+    .intro p:last-child { margin: .8rem 0 0; color: var(--muted); font-size: 1.08rem; }
+
+    .game-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(250px, .9fr); gap: 1.25rem; align-items: start; }
+    .card { border: 2px solid var(--ink); border-radius: var(--radius); background: var(--surface); }
+    .game-card { padding: clamp(1rem, 3vw, 1.6rem); }
+    .mode-switch { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1.25rem; }
+    .mode-button, .secondary-button, .clue-button {
+      border: 2px solid var(--green-dark);
+      border-radius: .65rem;
+      background: white;
+      color: var(--green-dark);
+      font-weight: 750;
+      padding: .65rem 1rem;
+    }
+    .mode-button[aria-pressed="true"] { background: var(--green-dark); color: white; }
+    .mode-button:hover:not([aria-pressed="true"]), .secondary-button:hover:not(:disabled), .clue-button:hover:not(:disabled) { background: var(--soft-green); }
+    .theme-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem; padding: .9rem 1rem; border-radius: .7rem; background: var(--soft-gold); }
+    .theme-label { margin: 0; font-weight: 800; }
+    .theme-detail { margin: 0; color: #49370f; }
+    .category-picker { margin: 1rem 0; }
+    label { display: block; margin-bottom: .35rem; font-weight: 750; }
+    select, input[type="text"] { width: 100%; border: 2px solid var(--line); border-radius: .65rem; background: white; color: var(--ink); padding: .65rem .8rem; }
+    .helper { margin: .35rem 0 0; color: var(--muted); font-size: .95rem; }
+    .score-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin: 1.25rem 0; }
+    .score-box { display: flex; align-items: baseline; gap: .5rem; }
+    .score { font-size: 2rem; font-weight: 850; line-height: 1; font-variant-numeric: tabular-nums; }
+    .score-label { font-weight: 700; }
+    .score-rule { margin: 0; color: var(--muted); }
+
+    .clues { margin: 1rem 0 1.4rem; padding: 0; list-style: none; counter-reset: clue; }
+    .clue-item { display: grid; grid-template-columns: auto 1fr; gap: .75rem; align-items: start; padding: .85rem 0; border-top: 1px solid #a6b1aa; counter-increment: clue; }
+    .clue-number { display: grid; width: 2rem; height: 2rem; place-items: center; border: 2px solid var(--line); border-radius: 50%; font-weight: 800; }
+    .clue-copy { margin: .1rem 0 0; }
+    .clue-copy.is-hidden { color: var(--muted); font-style: italic; }
+    .clue-actions { margin-top: .85rem; }
+    .clue-button { width: 100%; min-height: 52px; }
+    .clue-button:disabled { border-color: #65736b; background: #edf0ed; color: #36443c; cursor: not-allowed; }
+
+    .guess-form { display: grid; grid-template-columns: 1fr auto; gap: .65rem; align-items: end; margin-top: 1.25rem; }
+    .guess-form .field { min-width: 0; }
+    .primary-button { min-height: 52px; border: 2px solid var(--green-dark); border-radius: .65rem; background: var(--green-dark); color: white; font-weight: 800; padding: .65rem 1.1rem; }
+    .primary-button:hover:not(:disabled) { background: #082c1c; }
+    .primary-button:disabled { background: #52665b; cursor: not-allowed; }
+    .message { min-height: 3.2rem; margin: .85rem 0 0; padding: .6rem .75rem; border-left: 5px solid var(--green); background: var(--soft-green); font-weight: 650; }
+    .message.error { border-color: var(--danger); background: #fff0ed; color: #672116; }
+    .message.success { border-color: var(--green-dark); background: var(--soft-green); }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+    .side-card { padding: 1.2rem; }
+    .side-card h2 { margin: 0 0 .8rem; font-size: 1.25rem; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+    .stat { padding: .7rem; border: 1px solid var(--line); border-radius: .7rem; }
+    .stat strong { display: block; font-size: 1.6rem; line-height: 1.1; }
+    .stat span { color: var(--muted); font-size: .9rem; }
+    .side-note { margin: 1rem 0 0; padding-top: .9rem; border-top: 1px solid #a6b1aa; color: var(--muted); }
+    .secondary-button { width: 100%; margin-top: 1rem; min-height: 50px; }
+    .privacy { font-size: .9rem; }
+    .site-footer { padding: 1.5rem 0 2rem; color: var(--muted); text-align: center; }
+    .site-footer p { margin: 0; }
+
+    @media (max-width: 760px) {
+      .game-layout { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+      .stat { padding: .6rem .45rem; }
+      .stat strong { font-size: 1.35rem; }
+      .stat span { font-size: .82rem; }
+    }
+    @media (max-width: 480px) {
+      .wrap { width: min(100% - 1.25rem, 1080px); }
+      .header-inner { align-items: flex-start; }
+      .no-ads { font-size: .82rem; text-align: right; }
+      .guess-form { grid-template-columns: 1fr; }
+      .primary-button { width: 100%; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .score-row { align-items: flex-start; flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Pular para o jogo</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <p class="brand"><span aria-hidden="true">●</span> Palavra por Palavra</p>
+      <p class="no-ads">Sem anúncios · seu progresso fica neste dispositivo</p>
+    </div>
+  </header>
+
+  <main id="conteudo" class="wrap">
+    <section class="intro" aria-labelledby="titulo">
+      <p class="eyebrow">Uma palavra, quatro pistas</p>
+      <h1 id="titulo">Descubra no seu ritmo.</h1>
+      <p>Leia as pistas na ordem que preferir. Cada uma custa 25 pontos; você pode tentar quantas vezes quiser, mesmo quando chegar a zero.</p>
+    </section>
+
+    <div class="game-layout">
+      <section class="card game-card" aria-label="Jogo de palavras">
+        <nav class="mode-switch" aria-label="Modo de jogo">
+          <button class="mode-button" id="daily-mode" type="button" aria-pressed="true">Desafio diário</button>
+          <button class="mode-button" id="practice-mode" type="button" aria-pressed="false">Praticar</button>
+        </nav>
+
+        <div class="theme-row" id="daily-theme">
+          <p class="theme-label">Tema de hoje</p>
+          <p class="theme-detail">Sabores do Brasil</p>
+        </div>
+        <div class="category-picker" id="practice-picker" hidden>
+          <label for="category">Escolha uma categoria para praticar</label>
+          <select id="category">
+            <option>Comida</option>
+            <option>Animais</option>
+            <option>Objetos do cotidiano</option>
+            <option>Cultura pop</option>
+          </select>
+        </div>
+
+        <div class="score-row" aria-label="Pontuação atual">
+          <div class="score-box">
+            <span class="score" id="score">100</span>
+            <span class="score-label">pontos</span>
+          </div>
+          <p class="score-rule" id="clue-count">0 de 4 pistas reveladas · −25 por pista</p>
+        </div>
+
+        <section aria-labelledby="clues-heading">
+          <h2 id="clues-heading">Pistas</h2>
+          <ol class="clues" id="clues-list">
+            <li class="clue-item"><span class="clue-number" aria-hidden="true">1</span><p class="clue-copy is-hidden" data-clue="0">Pista ainda fechada.</p></li>
+            <li class="clue-item"><span class="clue-number" aria-hidden="true">2</span><p class="clue-copy is-hidden" data-clue="1">Pista ainda fechada.</p></li>
+            <li class="clue-item"><span class="clue-number" aria-hidden="true">3</span><p class="clue-copy is-hidden" data-clue="2">Pista ainda fechada.</p></li>
+            <li class="clue-item"><span class="clue-number" aria-hidden="true">4</span><p class="clue-copy is-hidden" data-clue="3">Pista ainda fechada.</p></li>
+          </ol>
+          <div class="clue-actions">
+            <button class="clue-button" id="reveal-clue" type="button">Revelar pista 1 (−25 pontos)</button>
+          </div>
+        </section>
+
+        <form class="guess-form" id="guess-form">
+          <div class="field">
+            <label for="guess">Qual é a palavra?</label>
+            <input id="guess" name="guess" type="text" autocomplete="off" autocapitalize="none" aria-describedby="guess-help" placeholder="Digite seu palpite">
+            <p class="helper" id="guess-help">Pressione Enter para enviar. Acentos, maiúsculas e espaços extras não fazem diferença.</p>
+          </div>
+          <button class="primary-button" type="submit">Tentar</button>
+        </form>
+        <p class="message" id="game-message" role="status" aria-live="polite" aria-atomic="true">O desafio diário está pronto. Digite seu palpite ou revele uma pista.</p>
+      </section>
+
+      <aside class="card side-card" aria-labelledby="stats-heading">
+        <h2 id="stats-heading">Seu desafio diário</h2>
+        <div class="stats-grid" aria-label="Estatísticas do desafio diário">
+          <div class="stat"><strong id="played-stat">0</strong><span>jogados</span></div>
+          <div class="stat"><strong id="win-stat">0</strong><span>acertos</span></div>
+          <div class="stat"><strong id="streak-stat">0</strong><span>dias seguidos</span></div>
+          <div class="stat"><strong id="best-stat">0</strong><span>melhor sequência</span></div>
+        </div>
+        <p class="side-note">O desafio muda diariamente. Suas estatísticas e o progresso de hoje são salvos apenas neste navegador.</p>
+        <button class="secondary-button" id="share-button" type="button">Compartilhar resultado sem spoiler</button>
+        <p class="side-note privacy">O compartilhamento não inclui a resposta. Nenhuma conta é necessária.</p>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap"><p>Feito para jogar com teclado, leitor de tela ou toque — sem pressa e sem anúncios.</p></div>
+  </footer>
+
+  <script>
+    (() => {
+      const puzzles = {
+        daily: {
+          category: "Sabores do Brasil",
+          answer: "jabuticaba",
+          clues: [
+            "É uma fruta nativa do Brasil.",
+            "Sua casca é escura e brilhante quando está madura.",
+            "A polpa clara costuma ser doce e suculenta.",
+            "Ela nasce agarrada ao tronco e aos galhos da árvore."
+          ]
+        },
+        practice: {
+          "Comida": [
+            { answer: "brigadeiro", clues: ["É um doce brasileiro muito popular.", "Leva chocolate e leite condensado.", "Costuma ser enrolado em pequenas bolinhas.", "Granulado de chocolate cobre sua superfície."] }
+          ],
+          "Animais": [
+            { answer: "capivara", clues: ["É um mamífero sul-americano.", "Gosta de viver perto da água.", "É sociável e costuma andar em grupos.", "É o maior roedor do mundo."] }
+          ],
+          "Objetos do cotidiano": [
+            { answer: "guarda-chuva", clues: ["É útil em dias de tempo instável.", "Pode ser aberto e fechado.", "Tem uma haste e várias varetas.", "Ajuda a proteger da chuva."] }
+          ],
+          "Cultura pop": [
+            { answer: "mônica", clues: ["É uma personagem brasileira de histórias em quadrinhos.", "É amiga de Cebolinha e Magali.", "Seu coelho de pelúcia se chama Sansão.", "É conhecida por usar um vestido vermelho."] }
+          ]
+        }
+      };
+      const $ = (id) => document.getElementById(id);
+      const today = new Date();
+      const dayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      const progressKey = `palavra-diaria-${dayKey}`;
+      const statsKey = "palavra-estatisticas-v1";
+      let mode = "daily";
+      let currentPracticeCategory = $("category").value;
+      let clueCount = 0;
+      let solved = false;
+      let guesses = 0;
+      let dailyStarted = false;
+      let puzzle = puzzles.daily;
+      let dailyProgress = readJson(progressKey, null);
+      let stats = readJson(statsKey, { played: 0, wins: 0, streak: 0, best: 0, lastPlayed: "" });
+
+      function readJson(key, fallback) {
+        try {
+          const value = localStorage.getItem(key);
+          return value ? JSON.parse(value) : fallback;
+        } catch (_) {
+          return fallback;
+        }
+      }
+      function saveJson(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { /* Storage may be unavailable in private browsing. */ }
+      }
+      function normalized(value) {
+        return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim().replace(/\s+/g, " ");
+      }
+      function setMessage(text, kind = "") {
+        const message = $("game-message");
+        message.className = `message${kind ? ` ${kind}` : ""}`;
+        message.textContent = text;
+      }
+      function renderClues() {
+        document.querySelectorAll("[data-clue]").forEach((node, index) => {
+          const shown = index < clueCount;
+          node.textContent = shown ? puzzle.clues[index] : "Pista ainda fechada.";
+          node.classList.toggle("is-hidden", !shown);
+        });
+        $("score").textContent = String(Math.max(0, 100 - clueCount * 25));
+        $("clue-count").textContent = `${clueCount} de 4 pistas reveladas · −25 por pista`;
+        const button = $("reveal-clue");
+        if (clueCount < 4 && !solved) {
+          button.disabled = false;
+          button.textContent = `Revelar pista ${clueCount + 1} (−25 pontos)`;
+        } else {
+          button.disabled = true;
+          button.textContent = solved ? "Palavra descoberta" : "Todas as pistas foram reveladas";
+        }
+      }
+      function renderStats() {
+        $("played-stat").textContent = String(stats.played);
+        $("win-stat").textContent = String(stats.wins);
+        $("streak-stat").textContent = String(stats.streak);
+        $("best-stat").textContent = String(stats.best);
+      }
+      function saveDailyProgress() {
+        if (mode === "daily") {
+          saveJson(progressKey, { clueCount, solved, guesses, dailyStarted });
+        }
+      }
+      function setMode(nextMode) {
+        mode = nextMode;
+        $("daily-mode").setAttribute("aria-pressed", String(mode === "daily"));
+        $("practice-mode").setAttribute("aria-pressed", String(mode === "practice"));
+        $("daily-theme").hidden = mode !== "daily";
+        $("practice-picker").hidden = mode !== "practice";
+        if (mode === "daily") {
+          puzzle = puzzles.daily;
+          dailyProgress = readJson(progressKey, null);
+          clueCount = dailyProgress ? dailyProgress.clueCount : 0;
+          solved = dailyProgress ? dailyProgress.solved : false;
+          guesses = dailyProgress ? dailyProgress.guesses : 0;
+          dailyStarted = dailyProgress ? dailyProgress.dailyStarted : false;
+          setMessage(solved ? `Você já descobriu a palavra de hoje. Sua pontuação foi ${Math.max(0, 100 - clueCount * 25)} pontos.` : "O desafio diário está pronto. Digite seu palpite ou revele uma pista.");
+        } else {
+          choosePracticePuzzle();
+          setMessage("Modo prática. Escolha uma categoria e tente descobrir a palavra.");
+        }
+        $("guess").value = "";
+        $("guess").disabled = solved;
+        document.querySelector(".primary-button").disabled = solved;
+        renderClues();
+      }
+      function choosePracticePuzzle() {
+        currentPracticeCategory = $("category").value;
+        const choices = puzzles.practice[currentPracticeCategory];
+        puzzle = choices[0];
+        clueCount = 0;
+        solved = false;
+        guesses = 0;
+        $("guess").disabled = false;
+        document.querySelector(".primary-button").disabled = false;
+        renderClues();
+      }
+      function startDaily() {
+        if (!dailyStarted) {
+          stats.played += 1;
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+          stats.streak = stats.lastPlayed === yesterdayKey ? stats.streak + 1 : 1;
+          stats.best = Math.max(stats.best, stats.streak);
+          stats.lastPlayed = dayKey;
+          dailyStarted = true;
+          saveJson(statsKey, stats);
+          renderStats();
+        }
+      }
+
+      $("reveal-clue").addEventListener("click", () => {
+        if (clueCount >= 4 || solved) return;
+        if (mode === "daily") startDaily();
+        clueCount += 1;
+        renderClues();
+        setMessage(`Pista ${clueCount}: ${puzzle.clues[clueCount - 1]} Pontuação agora: ${Math.max(0, 100 - clueCount * 25)} pontos.`, "success");
+        saveDailyProgress();
+      });
+      $("guess-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (solved) return;
+        const guess = $("guess").value;
+        if (!guess.trim()) {
+          setMessage("Digite um palpite antes de tentar.", "error");
+          $("guess").focus();
+          return;
+        }
+        guesses += 1;
+        if (mode === "daily") startDaily();
+        if (normalized(guess) === normalized(puzzle.answer)) {
+          solved = true;
+          $("guess").disabled = true;
+          document.querySelector(".primary-button").disabled = true;
+          if (mode === "daily") {
+            stats.wins += 1;
+            saveJson(statsKey, stats);
+            renderStats();
+          }
+          const points = Math.max(0, 100 - clueCount * 25);
+          setMessage(`Acertou! A palavra era ${puzzle.answer}. Você fez ${points} pontos em ${guesses} ${guesses === 1 ? "tentativa" : "tentativas"}.`, "success");
+          saveDailyProgress();
+          $("guess").value = "";
+          return;
+        }
+        setMessage("Ainda não. Tente outra palavra — suas tentativas são ilimitadas, mesmo com zero pontos.", "error");
+        $("guess").select();
+        saveDailyProgress();
+      });
+      $("daily-mode").addEventListener("click", () => setMode("daily"));
+      $("practice-mode").addEventListener("click", () => setMode("practice"));
+      $("category").addEventListener("change", () => {
+        choosePracticePuzzle();
+        setMessage(`Categoria ${currentPracticeCategory}. Uma nova palavra está pronta.`);
+      });
+      $("share-button").addEventListener("click", async () => {
+        const result = solved ? `${Math.max(0, 100 - clueCount * 25)} pontos` : "ainda estou jogando";
+        const shareText = `Palavra por Palavra · Desafio diário ${dayKey}\nResultado: ${result} · ${clueCount}/4 pistas · ${guesses} tentativas\nVocê consegue descobrir a palavra?`;
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: "Palavra por Palavra", text: shareText });
+            setMessage("Resultado compartilhado sem revelar a resposta.");
+          } else if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(shareText);
+            setMessage("Resultado copiado para a área de transferência, sem revelar a resposta.", "success");
+          } else {
+            const copyField = document.createElement("textarea");
+            copyField.value = shareText;
+            copyField.setAttribute("readonly", "");
+            copyField.style.position = "fixed";
+            copyField.style.opacity = "0";
+            document.body.append(copyField);
+            copyField.select();
+            const copied = document.execCommand("copy");
+            copyField.remove();
+            setMessage(copied ? "Resultado copiado para a área de transferência, sem revelar a resposta." : "Seu resultado está pronto para compartilhar: " + shareText, copied ? "success" : "");
+          }
+        } catch (error) {
+          if (error.name !== "AbortError") setMessage("Não foi possível compartilhar agora. Tente novamente.");
+        }
+      });
+
+      if (dailyProgress) {
+        clueCount = dailyProgress.clueCount || 0;
+        solved = Boolean(dailyProgress.solved);
+        guesses = dailyProgress.guesses || 0;
+        dailyStarted = Boolean(dailyProgress.dailyStarted);
+        if (solved) setMessage(`Você já descobriu a palavra de hoje. Sua pontuação foi ${Math.max(0, 100 - clueCount * 25)} pontos.`);
+        else if (clueCount) setMessage(`Seu progresso de hoje foi recuperado: ${clueCount} ${clueCount === 1 ? "pista revelada" : "pistas reveladas"}.`);
+      }
+      $("guess").disabled = solved;
+      document.querySelector(".primary-button").disabled = solved;
+      renderClues();
+      renderStats();
+    })();
+  </script>
+</body>
+</html>

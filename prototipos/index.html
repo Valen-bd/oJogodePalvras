@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f0e8">
+  <title>Palavra do Dia — painel de protótipos</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202721;
+      --muted: #657069;
+      --paper: #f4f0e8;
+      --card: #fffdf8;
+      --line: #dedbd1;
+      --green: #426b50;
+      --orange: #c7673d;
+      --blue: #416a83;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 12% 5%, #e1eadb 0, transparent 34rem),
+        radial-gradient(ellipse at 95% 90%, #f0dfd2 0, transparent 30rem),
+        var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    main { width: min(1080px, calc(100% - 40px)); margin: 0 auto; padding: 56px 0 72px; }
+    .eyebrow { color: var(--green); font-size: .76rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { max-width: 760px; margin: 12px 0 14px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.6rem, 7vw, 5.3rem); font-weight: 500; letter-spacing: -.055em; line-height: .98; }
+    .intro { max-width: 650px; color: var(--muted); font-size: 1.07rem; line-height: 1.65; }
+    .meta { display: flex; flex-wrap: wrap; gap: 9px; margin: 24px 0 42px; }
+    .meta span { border: 1px solid var(--line); border-radius: 999px; background: #ffffff8a; padding: 7px 12px; color: #465148; font-size: .83rem; font-weight: 650; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 17px; }
+    article { display: flex; min-height: 330px; flex-direction: column; border: 1px solid var(--line); border-radius: 19px; background: var(--card); padding: 22px; box-shadow: 0 12px 34px #2933270b; }
+    .number { display: grid; width: 39px; height: 39px; place-items: center; border-radius: 12px; background: #e9eee4; color: var(--green); font-weight: 850; }
+    article:nth-child(2) .number { background: #e4edf2; color: var(--blue); }
+    article:nth-child(3) .number { background: #f5e8df; color: var(--orange); }
+    h2 { margin: 22px 0 8px; font-family: Georgia, "Times New Roman", serif; font-size: 1.63rem; font-weight: 500; letter-spacing: -.025em; }
+    article p { margin: 0 0 20px; color: var(--muted); line-height: 1.6; }
+    .focus { margin-top: auto; padding-top: 13px; color: #59635b; font-size: .85rem; }
+    .focus strong { color: var(--ink); }
+    a.button { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; border-radius: 10px; background: var(--ink); padding: 13px 15px; color: white; font-weight: 750; text-decoration: none; transition: transform .18s ease, background .18s ease; }
+    a.button:hover { transform: translateY(-2px); background: var(--green); }
+    a.button:focus-visible { outline: 3px solid #c7673d; outline-offset: 3px; }
+    footer { margin-top: 32px; color: var(--muted); font-size: .87rem; line-height: 1.6; }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } article { min-height: 0; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Painel de design · protótipos exploratórios</div>
+    <h1>Uma palavra.<br>Três experiências.</h1>
+    <p class="intro">Três interpretações navegáveis para o jogo de pistas progressivas em português brasileiro. Compare como cada proposta transforma o mesmo loop em uma experiência diferente.</p>
+    <div class="meta" aria-label="Escopo comum dos protótipos">
+      <span>Desafio diário + prática</span>
+      <span>4 pistas progressivas</span>
+      <span>Pontuação até 100</span>
+      <span>Web responsiva</span>
+    </div>
+    <section class="grid" aria-label="Protótipos disponíveis">
+      <article>
+        <div class="number" aria-hidden="true">01</div>
+        <h2>Jogue sem pensar demais</h2>
+        <p>Uma proposta orientada por UX: deixa o próximo passo evidente, explica a pontuação e mantém o foco na rodada.</p>
+        <div class="focus"><strong>Ênfase:</strong> clareza e fluxo da partida</div>
+        <a class="button" href="ux.html">Abrir proposta UX <span aria-hidden="true">→</span></a>
+      </article>
+      <article>
+        <div class="number" aria-hidden="true">02</div>
+        <h2>Acessível por padrão</h2>
+        <p>Uma experiência construída para funcionar com diferentes formas de interação, sem depender de cor ou precisão motora.</p>
+        <div class="focus"><strong>Ênfase:</strong> acessibilidade web</div>
+        <a class="button" href="acessibilidade.html">Abrir proposta acessível <span aria-hidden="true">→</span></a>
+      </article>
+      <article>
+        <div class="number" aria-hidden="true">03</div>
+        <h2>Um convite para voltar</h2>
+        <p>Uma direção de arte mais expressiva, com personalidade visual e detalhes que dão identidade ao ritual diário.</p>
+        <div class="focus"><strong>Ênfase:</strong> linguagem visual e atmosfera</div>
+        <a class="button" href="visual.html">Abrir proposta visual <span aria-hidden="true">→</span></a>
+      </article>
+    </section>
+    <footer>Os três mockups são conceitos para discussão, não uma decisão final de identidade ou escopo. As respostas e pistas mostradas são exemplos demonstrativos.</footer>
+  </main>
+</body>
+</html>
