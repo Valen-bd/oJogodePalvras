@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f2e9">
+    <meta name="description" content="Uma palavra por dia, quatro pistas e uma pausa no seu ritmo.">
+    <title>pista — uma palavra por vez</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#game">Pular para o jogo</a>
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="pista, início">
+          <span class="brand-mark" aria-hidden="true">?</span>
+          <span class="brand-name">pista<span>.</span></span>
+        </a>
+        <p class="top-note"><span class="free-dot" aria-hidden="true"></span>Grátis, sem anúncios</p>
+      </header>
+
+      <main id="game">
+        <section class="intro" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">Seu intervalo favorito</p>
+            <h1 id="page-title">Uma palavra.<br><em>Quatro pistas.</em></h1>
+          </div>
+          <p class="intro-copy">Pense com calma, arrisque um palpite. A cada pista, a palavra fica mais perto — e vale um pouquinho menos.</p>
+        </section>
+
+        <div class="game-grid">
+          <section class="game-card" aria-labelledby="puzzle-title">
+            <div class="game-toolbar">
+              <div class="mode-switch" role="group" aria-label="Modo de jogo">
+                <button class="mode-button" id="daily-mode" type="button" aria-pressed="true">Desafio do dia</button>
+                <button class="mode-button" id="practice-mode" type="button" aria-pressed="false">Praticar</button>
+              </div>
+              <p class="topic-stamp" id="topic-stamp">Carregando desafio…</p>
+              <div class="practice-picker" id="practice-picker" hidden>
+                <label for="topic-select">Escolha um tema</label>
+                <select id="topic-select" disabled>
+                  <option value="comida">Comida</option>
+                  <option value="animais">Animais</option>
+                  <option value="objetos-do-cotidiano">Objetos do cotidiano</option>
+                  <option value="cultura-pop">Cultura pop</option>
+                </select>
+                <button class="new-round-button" id="new-practice" type="button" disabled>Outra palavra <span aria-hidden="true">↻</span></button>
+              </div>
+            </div>
+
+            <div class="puzzle-heading">
+              <h2 id="puzzle-title">A palavra de hoje</h2>
+              <span class="round-count" id="round-count">DESAFIO DO DIA</span>
+            </div>
+            <p class="puzzle-prompt" id="puzzle-prompt">Uma resposta, quatro pistas possíveis. Você escolhe quando pedir ajuda.</p>
+
+            <div class="score-row">
+              <span class="score-label">Pontos em jogo</span>
+              <p class="score" aria-label="Pontuação atual">
+                <strong id="score-value">100</strong><span>pontos</span>
+              </p>
+            </div>
+            <div class="score-track" id="score-track" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+
+            <ol class="clue-list" id="clue-list" aria-label="Pistas reveladas"></ol>
+            <p class="clue-empty" id="clue-empty">As pistas aparecem aqui, na ordem em que você pedir.</p>
+            <div class="clue-action">
+              <button class="hint-button" id="hint-button" type="button" disabled>
+                <span class="hint-icon" aria-hidden="true">＋</span><span id="hint-label">Revelar pista 1</span>
+              </button>
+              <span class="hint-cost" id="hint-cost">Cada pista custa 25 pontos</span>
+            </div>
+
+            <form class="guess-form" id="guess-form">
+              <label class="sr-only" for="guess-input">Seu palpite</label>
+              <input class="guess-input" id="guess-input" name="guess" type="text" maxlength="80" placeholder="Qual é a palavra?" autocomplete="off" aria-describedby="guess-help game-feedback" required disabled>
+              <button class="submit-button" id="submit-button" type="submit" disabled>Chutar <span aria-hidden="true">↗</span></button>
+            </form>
+            <p class="input-help" id="guess-help">Acentos, maiúsculas e espaços extras não fazem diferença.</p>
+            <p class="feedback" id="game-feedback" role="status" aria-live="polite" aria-atomic="true">Carregando o desafio do dia…</p>
+            <div class="guess-history" id="guess-history" aria-label="Palpites anteriores"></div>
+          </section>
+
+          <aside class="side-card" aria-label="Data e estatísticas">
+            <section class="aside-top" aria-label="Data do desafio diário">
+              <p class="aside-label">Um novo desafio todo dia</p>
+              <div class="aside-date">
+                <span class="date-big" id="date-day">—</span>
+                <span class="date-month" id="date-month">Horário de Brasília</span>
+              </div>
+              <div class="aside-decoration">
+                <span>Um minuto só seu.</span>
+                <svg viewBox="0 0 70 48" fill="none" aria-hidden="true">
+                  <path d="M11 37c8-19 17-27 29-25 10 1 14 12 19 22" stroke="#F1D27A" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="18" cy="18" r="5" fill="#EE755B"/>
+                  <circle cx="48" cy="13" r="3" fill="#F1D27A"/>
+                  <path d="M33 7v8m-4-4h8" stroke="#D7E4D8" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </section>
+            <section class="stats" aria-labelledby="stats-title">
+              <h3 id="stats-title">Seu cantinho</h3>
+              <dl class="stat-list">
+                <div class="stat-row"><dt>Palavras certas</dt><dd id="stat-wins">0</dd></div>
+                <div class="stat-row"><dt>Melhor pontuação diária</dt><dd id="stat-best">—</dd></div>
+                <div class="stat-row"><dt>Pontos somados</dt><dd id="stat-points">0</dd></div>
+                <div class="stat-row"><dt>Dias com jogo</dt><dd id="stat-days">0</dd></div>
+              </dl>
+              <p class="streak-note">Sem sequência quebrada: conte os dias em que você apareceu, no seu ritmo.</p>
+              <details class="practice-stats">
+                <summary>Estatísticas de prática</summary>
+                <p><span>Partidas</span><strong id="practice-played">0</strong></p>
+                <p><span>Palavras certas</span><strong id="practice-wins">0</strong></p>
+                <p><span>Pontos somados</span><strong id="practice-points">0</strong></p>
+              </details>
+            </section>
+            <div class="share-wrap">
+              <button class="share-button" id="share-button" type="button" disabled aria-label="Compartilhar resultado diário sem revelar a palavra">
+                <span aria-hidden="true">↗</span> Compartilhar sem spoiler
+              </button>
+              <p class="share-note" id="share-note">A palavra fica só com você. Compartilhamento disponível no desafio diário.</p>
+            </div>
+          </aside>
+        </div>
+        <footer class="site-footer">
+          <span>Feito para uma pausa boa — <strong>sem anúncios, sempre.</strong></span>
+          <span>Suas estatísticas ficam neste dispositivo.</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

@@ -105,7 +105,7 @@ O diretório atualmente contém apenas o README e protótipos HTML autônomos; n
 | Hospedagem | Front-end estático + API e banco gerenciados | Separação simples entre arquivos de interface e conteúdo/validação |
 | Testes | Vitest + Testing Library; Playwright para ponta a ponta | Testes de regras isolados e fluxos reais no navegador |
 
-Estas são recomendações, não dependências existentes. Não se deve migrar o protótipo até aprovar a stack e verificar as convenções da equipe. Se o curso/projeto exigir outra tecnologia, manter as fronteiras e contratos descritos abaixo.
+Estas eram recomendações, não dependências existentes. A primeira implementação funcional adotou Node.js nativo (sem dependências externas) e JavaScript/CSS no cliente para permitir execução imediata neste repositório inicialmente vazio. A aplicação mantém as fronteiras cliente/API e o isolamento do conteúdo descritos abaixo, mas ainda não implementa React, TypeScript, Fastify, PostgreSQL, ferramenta editorial, autenticação editorial, limites distribuídos nem persistência de prática no servidor. O conteúdo atual é um conjunto inicial pequeno mantido em `server/puzzles.mjs`; o desafio diário escolhe deterministicamente uma palavra desse catálogo e poderá repetir palavras, portanto isso não substitui a revisão/aprovação e o calendário editorial de produção. O estado das rodadas diárias e de prática fica em memória no servidor; o token e o progresso diário são guardados no navegador, mas um reinício do servidor cria uma rodada nova. Antes de produção, mover o catálogo para o fluxo editorial com aprovação por data e armazenamento persistente previstos. Esta concessão é adequada ao MVP local/demonstração, não substitui a arquitetura de produção caso seja necessária operação escalável ou manutenção editorial contínua.
 
 ### 4.2 Diagrama lógico
 
@@ -148,7 +148,7 @@ Modelo conceitual no cliente:
 type GameMode = "daily" | "practice";
 
 interface RoundState {
-  puzzleId: string;
+  roundId: string;
   mode: GameMode;
   topic: Topic;
   clueCount: 0 | 1 | 2 | 3 | 4;
@@ -159,7 +159,7 @@ interface RoundState {
 }
 ```
 
-O cliente não guarda resposta. O estado diário guardado localmente é associado à chave da data/puzzle; ao mudar o identificador ou data, deve iniciar-se uma rodada diária nova. A resposta de uma rodada prática pode ser mantida apenas no estado em memória se a implementação da API não exigir outra solução.
+O cliente não guarda resposta antes de resolver. O estado diário guardado localmente é associado à chave da data/rodada; ao mudar o identificador ou data, deve iniciar-se uma rodada diária nova. O servidor mantém o índice das pistas, contagem de palpites e estado de resolução por `roundId` opaco. Sem conta, o token é guardado localmente; sessões em memória expiram quando o processo é reiniciado no MVP demonstrativo.
 
 ### 5.2 Cálculo e transições
 
@@ -206,11 +206,12 @@ Todos os endpoints são versionados sob `/api/v1`, servidos por HTTPS, com `Cont
 
 | Método e rota | Uso | Conteúdo público |
 |---|---|---|
-| `GET /api/v1/daily` | Obter data do jogo, id opaco, tema e metadados | Nunca resposta nem pistas fechadas |
+| `GET /api/v1/daily` | Obter data do jogo, tema e metadados | Nunca resposta nem pistas fechadas |
+| `POST /api/v1/daily/rounds` | Criar ou restaurar rodada diária pelo token opaco | Estado e token; resposta apenas se a rodada já foi resolvida |
 | `GET /api/v1/practice/topics` | Listar temas disponíveis | IDs e nomes |
-| `POST /api/v1/practice/puzzles` | Selecionar/criar uma palavra de prática para um tema | `puzzleId` opaco e tema, sem resposta |
-| `POST /api/v1/puzzles/:id/clues` | Obter uma pista pelo índice esperado | Somente índice/texto solicitado e pontuação derivada |
-| `POST /api/v1/puzzles/:id/guesses` | Submeter palpite | Correto/incorreto e resposta somente quando correta |
+| `POST /api/v1/practice/rounds` | Criar rodada de prática para um tema | `roundId` opaco e tema, sem resposta |
+| `POST /api/v1/rounds/:id/clues` | Revelar a próxima pista, sequencialmente | Somente índice/texto recém-liberado e pontuação derivada |
+| `POST /api/v1/rounds/:id/guesses` | Submeter palpite | Correto/incorreto e tentativas; resposta apenas quando correta |
 | `GET /api/v1/health` | Verificação operacional | Estado técnico mínimo |
 
 Exemplos conceituais:
@@ -218,7 +219,6 @@ Exemplos conceituais:
 ```json
 // GET /api/v1/daily
 {
-  "puzzleId": "opaque-id",
   "gameDate": "2026-10-13",
   "topic": { "id": "comida", "label": "Comida" },
   "clueCount": 4,
@@ -227,7 +227,12 @@ Exemplos conceituais:
 ```
 
 ```json
-// POST /api/v1/puzzles/{id}/clues
+// POST /api/v1/daily/rounds (roundId é opcional para restaurar sessão)
+{ "roundId": "opaque-id-from-local-storage" }
+```
+
+```json
+// POST /api/v1/rounds/{roundId}/clues
 { "expectedClueIndex": 0 }
 
 // Resposta
@@ -240,7 +245,7 @@ Exemplos conceituais:
 ```
 
 ```json
-// POST /api/v1/puzzles/{id}/guesses
+// POST /api/v1/rounds/{roundId}/guesses
 { "guess": "abacaxi" }
 
 // Resposta incorreta
@@ -252,9 +257,9 @@ Exemplos conceituais:
 
 ### 6.1 Erros e consistência
 
-Usar códigos HTTP adequados e um envelope de erro estável, por exemplo `{ "error": { "code": "ROUND_ALREADY_SOLVED", "message": "..." } }`. Casos esperados: `400` conteúdo inválido, `404` rodada inexistente, `409` estado conflitante/data encerrada, `429` limite temporário e `5xx` falha operacional.
+Usar códigos HTTP adequados e um envelope de erro estável, por exemplo `{ "error": { "code": "ROUND_ALREADY_SOLVED", "message": "..." } }`. Casos esperados: `400` conteúdo inválido, `404` rodada inexistente, `409` pista fora de ordem/rodada resolvida/data encerrada, `429` limite temporário e `5xx` falha operacional.
 
-O servidor deve validar id, modo, data, índice esperado da pista e formato do palpite. `expectedClueIndex` permite repetir a mesma requisição após falha sem avançar a pista; o cálculo de pontuação usa esse índice e deve ser idempotente. Como não há conta, ranking nem prêmio, o progresso e o número de tentativas são mantidos no cliente e podem ser adulterados pelo próprio jogador; a API protege o conteúdo/resposta, mas não promete placar antifraude. O cliente bloqueia mutações após a vitória. O cliente não deve converter erro de API em sucesso aparente: apresentar uma mensagem clara, preservar o estado anterior e oferecer nova tentativa.
+O servidor valida id, modo, data, índice esperado da pista e formato do palpite. Uma pista fora de ordem retorna `409`; repetir uma pista já liberada devolve o mesmo texto sem novo desconto, tornando o retry idempotente. O servidor mantém estado transitório por token opaco: impede pular pistas e rejeita novos palpites após a vitória. Como não há conta, ranking nem prêmio, qualquer pessoa ainda pode criar outra rodada ou editar dados locais; a API protege o conteúdo e as transições de uma rodada, mas não promete placar antifraude. O cliente não deve converter erro de API em sucesso aparente: apresentar mensagem clara, preservar o estado anterior e oferecer nova tentativa.
 
 Os endpoints de jogo podem ser anônimos. Aplicar limites razoáveis por IP/rodada para mitigar abuso, sem exigir identificador persistente desnecessário. Não registrar palpites em texto por padrão; métricas agregadas e anônimas bastam para saúde do serviço.
 
@@ -305,12 +310,11 @@ Guardar sob namespace/versionamento explícito, por exemplo:
 
 ```text
 localStorage["pista:v1:daily:<gameDate>"] = {
-  puzzleId, clueCount, guesses, solved, attempts, score
+  roundId, clueCount, guesses, solved, attempts
 }
 
 localStorage["pista:v1:stats"] = {
-  dailyPlayed, dailyWins, dailyPointsTotal, bestDailyScore,
-  daysPlayed, currentNonPunitiveStreak, bestStreak,
+  dailyWins, dailyPointsTotal, bestDailyScore, playedDays,
   practicePlayed, practiceWins, practicePointsTotal
 }
 ```
@@ -321,16 +325,16 @@ Não guardar token, identificador pessoal ou senha. A resposta só é guardada n
 
 ### 7.3 Estatísticas e sequência
 
-Separar números do diário e da prática. Prática não altera sequência diária. No diário, registrar participação/conclusão e vitórias de maneira consistente com o PRD; a sequência é informativa e não bloqueia conteúdo, não perde pontos nem gera mensagem de falha por ausência.
+Separar números do diário e da prática. Prática não altera sequência diária. Para este MVP, “dias com jogo” é a contagem acumulada de datas únicas em que o desafio diário foi iniciado; um dia perdido nunca reduz essa contagem, não bloqueia conteúdo e não gera mensagem de falha por ausência. Não é uma sequência estritamente consecutiva. A contagem é exibida no painel lateral.
 
-O design escolhido mostra “Palavras certas”, “Melhor pontuação” e “Dias com jogo”. Usar esses rótulos no MVP. Se “sequência atual/melhor” permanecer no PRD, tratá-la como complemento sem punição e mostrar dias jogados de maneira positiva; confirmar o critério exato de sequência antes de fechar os textos finais.
+O design escolhido mostra “Palavras certas”, “Melhor pontuação diária”, “Pontos somados” e “Dias com jogo”. Usar esses rótulos no MVP.
 
 ## 8. Fluxos da interface
 
 ### 8.1 Desafio diário
 
-1. Carregar `/daily`; mostrar tema e data enquanto o estado local é lido.
-2. Buscar o progresso local correspondente ao `puzzleId`.
+1. Carregar `GET /api/v1/daily`; mostrar tema e data enquanto o estado local é lido.
+2. Restaurar ou criar o token opaco via `POST /api/v1/daily/rounds`; buscar o progresso local correspondente ao `roundId`.
 3. Restaurar pistas já abertas, tentativas, pontuação e resultado resolvido.
 4. Ao clicar “Revelar pista”, consultar API, atualizar interface e persistir progresso.
 5. Ao submeter palpite, validar campo, enviar API e apresentar mensagem anunciável.
@@ -347,9 +351,9 @@ O design escolhido mostra “Palavras certas”, “Melhor pontuação” e “D
 
 ### 8.3 Compartilhamento sem spoiler
 
-Gerar saída determinística contendo nome do jogo, data, pontuação, tentativas e grade/símbolos de pistas sem conteúdo textual e sem resposta. Incluir URL pública do jogo, nunca `answer`, texto de pista privada ou `puzzleId` decodificável.
+Gerar saída determinística contendo nome do jogo, data, pontuação e tentativas (quando concluído) ou progresso de pistas (durante a partida), com grade/símbolos sem conteúdo textual. Incluir URL pública do jogo, nunca `answer`, texto de pista privada ou token `roundId`.
 
-Usar `navigator.share()` quando disponível e fallback para copiar texto com `navigator.clipboard.writeText()`. Para contextos sem permissão/HTTPS, mostrar o resultado selecionável e informar como copiar. Compartilhar é sempre ação explícita do usuário. Não permitir compartilhar resultado não concluído se isso puder sugerir resposta/estado de modo confuso; definir mensagem para partida não resolvida.
+Usar `navigator.share()` quando disponível e fallback para copiar texto com `navigator.clipboard.writeText()`. Para contextos sem permissão/HTTPS, mostrar o resultado selecionável e informar como copiar. Compartilhar é sempre ação explícita do usuário; texto parcial informa somente quantas pistas foram abertas e não sugere a resposta.
 
 ## 9. Acessibilidade e compatibilidade
 
@@ -487,12 +491,10 @@ No MVP, é aceitável que a administração seja uma ferramenta mínima restrita
 ## 15. Decisões em aberto antes do desenvolvimento
 
 1. Stack e hospedagem finais, visto que o projeto não possui ambiente técnico configurado.
-2. Definição precisa de sequência: dias iniciados ou desafios concluídos; tratamento de uma rodada abandonada.
-3. Resultado compartilhável de uma partida diária não concluída.
-4. Regras editoriais para aliases, hífens, abreviações e respostas com nomes próprios.
-5. Necessidade de ferramenta editorial própria no MVP ou publicação por operação autenticada.
-6. Prazo de retenção de métricas técnicas e conteúdo retirado.
-7. Procedimento de contingência quando um desafio é considerado incorreto depois da publicação.
+2. Regras editoriais para aliases, hífens, abreviações e respostas com nomes próprios.
+3. Necessidade de ferramenta editorial própria no MVP ou publicação por operação autenticada.
+4. Prazo de retenção de métricas técnicas e conteúdo retirado.
+5. Procedimento de contingência quando um desafio é considerado incorreto depois da publicação.
 
 ## 16. Definição de pronto
 
